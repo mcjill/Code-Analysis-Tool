@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Analysis Tool</title>
+  <!-- Include Tailwind CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.min.css" rel="stylesheet">
+  <style>
+    /* Additional custom styles can be added here */
+  </style>
+</head>
+
+<body class="bg-gray-100">
+  <div class="container mx-auto p-8">
+    <h1 class="text-3xl font-bold mb-4">Code Analysis Tool</h1>
+    <div class="mb-4">
+      <label for="code" class="font-bold">Enter JavaScript code:</label>
+      <textarea id="code" class="w-full h-32 px-2 py-1 border border-gray-300 rounded-md resize-none"></textarea>
+    </div>
+    <div class="flex">
+      <button id="analyzeBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Analyze Code
+      </button>
+      <button id="suggestBtn" class="ml-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Code Suggestions
+      </button>
+    </div>
+    <div id="loadingDiv" class="hidden fixed inset-0 flex items-center justify-center z-50 bg-white">
+      <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
+    </div>
+    <div id="results" class="mt-4">
+      <!-- Analysis results will be displayed here -->
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.all.min.js"></script>
+  <script>
+    // Tokenization and analysis logic
+    function analyzeCode() {
+      const code = document.getElementById('code').value;
+      if (code.trim() === "") {
+        Swal.fire({
+          title: 'Error',
+          text: 'Please enter JavaScript code',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+        return;
+      }
+
+      showLoading();
+
+      setTimeout(function () {
+        const tokens = tokenize(code);
+        const issues = analyze(tokens);
+
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = ''; // Clear previous results
+
+        if (issues.length === 0) {
+          resultsDiv.innerHTML = '<p class="text-green-500">No issues found. Code looks good!</p>';
+        } else {
+          issues.forEach(issue => {
+            const issueDiv = document.createElement('div');
+            issueDiv.classList.add('bg-red-100', 'border', 'border-red-500', 'text-red-700', 'px-4', 'py-2', 'rounded', 'my-2');
+            issueDiv.innerHTML = `Line ${issue.line}: ${issue.message}`;
+            resultsDiv.appendChild(issueDiv);
+          });
+        }
+
+        hideLoading();
+      }, 2000);
+    }
+
+    // Tokenization function
+    function tokenize(code) {
+      // Replace comments with whitespace
+      code = code.replace(/\/\/.*|\/\*[^]*?\*\//g, ' ');
+
+      // Tokenize the code using regular expression
+      const tokens = code.match(/[^\s"']+|"([^"]*)"|'([^']*)'/g);
+      return tokens ? tokens : [];
+    }
+
+    // Analysis function
+    function analyze(tokens) {
+      const issues = [];
+
+      // Example analysis: Check for unused variables
+      const variableMap = new Map();
+
+      tokens.forEach(token => {
+        if (/^[a-zA-Z$_][a-zA-Z$_0-9]*$/.test(token)) {
+          const variableName = token;
+          if (variableMap.has(variableName)) {
+            variableMap.set(variableName, variableMap.get(variableName) + 1);
+          } else {
+            variableMap.set(variableName, 1);
+          }
+        }
+      });
+
+      variableMap.forEach((count, variableName) => {
+        if (count === 1) {
+          issues.push({ line: 0, message: `Unused variable: ${variableName}` });
+        }
+      });
+
+      return issues;
+    }
+
+    // Code suggestion logic
+    function suggestCode() {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '<p class="text-blue-500">Code suggestion: Consider using arrow functions for concise syntax.</p>';
+    }
+
+    // Event listener for the analyze button
+    document.getElementById('analyzeBtn').addEventListener('click', analyzeCode);
+
+    // Event listener for the suggest button
+    document.getElementById('suggestBtn').addEventListener('click', suggestCode);
+
+    // Show loading effect
+    function showLoading() {
+      const loadingDiv = document.getElementById('loadingDiv');
+      loadingDiv.classList.remove('hidden');
+    }
+
+    // Hide loading effect
+    function hideLoading() {
+      const loadingDiv = document.getElementById('loadingDiv');
+      loadingDiv.classList.add('hidden');
+    }
+  </script>
+</body>
+
+</html>
